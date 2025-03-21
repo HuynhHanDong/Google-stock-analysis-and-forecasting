@@ -4,7 +4,8 @@ import altair as alt
 from statsmodels.tsa.seasonal import seasonal_decompose
 
 google = pd.read_csv('C:/Users/HanDong/Documents/Study/Semester 4/DAPm391/assignment/Google_Stock_2020_2025.csv')
-google['Year'] = pd.to_datetime(google['Year']).dt.strftime('%Y')
+google['Year'] = pd.to_datetime(google['Date']).dt.strftime('%Y')
+google['MonthYear'] = pd.to_datetime(google['Date']).dt.strftime('%Y-%m')
 
 st.set_page_config(page_title='Stock Analysis')
 
