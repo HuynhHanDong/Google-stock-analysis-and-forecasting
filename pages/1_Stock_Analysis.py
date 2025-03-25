@@ -1,81 +1,96 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
-from statsmodels.tsa.seasonal import seasonal_decompose
 
+st.set_page_config(page_title='Stock Analysis Dashboard')
+
+# Load dataset
 google = pd.read_csv('C:/Users/HanDong/Documents/Study/Semester 4/DAPm391/assignment/Google_Stock_2020_2025.csv')
-google['Year'] = pd.to_datetime(google['Date']).dt.strftime('%Y')
 google['MonthYear'] = pd.to_datetime(google['Date']).dt.strftime('%Y-%m')
 
-st.set_page_config(page_title='Stock Analysis')
-
 st.header("Google stock price 2014 - 2025")
-st.write("Comming soon")
-#st.image()
+
+# User selection for column and year
+columns = ['Close', 'Open', 'High', 'Low', 'Adj Close', 'Volume']
+selected_column = st.selectbox("Select column to visualize", columns)
+selected_year = st.selectbox("Select year", ['2020-2025', 2020, 2021, 2022, 2023, 2024])
+
+# Filter data based on selection
+if selected_year == '2020-2025':
+    filtered_df = google
+else:
+    filtered_df = google[google['Year'] == selected_year]
+
+# Create Altair chart
+price_chart = alt.Chart(filtered_df).mark_line().encode(
+        x='Date:T',
+        y=alt.Y(selected_column, title=f"{selected_column} Price"),
+        tooltip=['Date', selected_column]
+    ).properties(title=f"Google {selected_column} stock price {selected_year}", width=800, height=400).interactive()
+
+# Display chart
+st.altair_chart(price_chart, use_container_width=True)
 
 # -----------------------------------------------------------------------------------------------------------
 st.header("Stock Price Moving Averages")
 
-# Input rolling day:
+# User input for number of moving average day:
 ma = st.number_input("Number of moving averages day", min_value=1, max_value=500, value=30)
 
-def moving_averages(number_of_day: int):
-    google['Close_MA'] = google['Close'].rolling(window=number_of_day, min_periods=1).mean()
-    df_melted = google.melt(id_vars=['Date', 'MonthYear'], value_vars=['Close', 'Close_MA'], var_name='Legend', value_name='Price')
-    
-    chart = alt.Chart(df_melted).mark_line().encode(
-        x=alt.X('Date:T', title="Time", axis=alt.Axis(format='%Y-%m')),
-        y=alt.Y('Price:Q', title="Price (USD)"),
-        color=alt.Color('Legend:N', scale=alt.Scale(scheme='category10')),
-        tooltip=['Date', 'Legend', 'Price']
-    ).properties(title=f"Stock Price & {number_of_day}-Day Moving Average", width=800, height=400).interactive()
-    
-    st.altair_chart(chart)
+# Filter data based on selection
+google['Close_MA'] = google['Close'].rolling(window=ma, min_periods=1).mean()
+df_melted = google.melt(id_vars=['Date', 'MonthYear'], value_vars=['Close', 'Close_MA'], var_name='Legend', value_name='Price')
 
-# Plot image
-moving_averages(ma)
+# Create Altair chart
+ma_chart = alt.Chart(df_melted).mark_line().encode(
+    x=alt.X('Date:T', title="Time", axis=alt.Axis(format='%Y-%m')),
+    y=alt.Y('Price:Q', title="Price (USD)"),
+    color=alt.Color('Legend:N', scale=alt.Scale(scheme='category10')),
+    tooltip=['Date', 'Legend', 'Price']
+).properties(title=f"Stock Price & {ma}-Day Moving Average", width=800, height=400).interactive()
+
+# Display chart
+st.altair_chart(ma_chart)
 
 # -----------------------------------------------------------------------------------------------------------
 st.header("Stock Price Volatility")
 
-# Input rolling:
-rolling = st.number_input("Number of volatility day", min_value=1, max_value=500, value=30)
+# user input for number of volatility day:
+vol = st.number_input("Number of volatility day", min_value=1, max_value=500, value=30)
 
-def volatility(number_of_day: int):
-    google['Volatility'] = google['Close'].rolling(window=number_of_day).std()
+# Filter data based on selection
+google['Volatility'] = google['Close'].rolling(window=vol).std()
     
-    vol_chart = alt.Chart(google).mark_line(color='purple').encode(
-        x=alt.X('Date:T', title="Time", axis=alt.Axis(format='%Y-%m')),
-        y='Volatility:Q',
-        tooltip=['Date', 'Volatility']
-    ).properties(title=f"Google Stock Price Volatility ({number_of_day} Days)").interactive()
-    
-    st.altair_chart(vol_chart, use_container_width=True)
+# Create Altair chart
+vol_chart = alt.Chart(google).mark_line(color='purple').encode(
+    x=alt.X('Date:T', title="Time", axis=alt.Axis(format='%Y-%m')),
+    y='Volatility:Q',
+    tooltip=['Date', 'Volatility']
+).properties(title=f"Google Stock Price Volatility ({vol} Days)").interactive()
 
-# Plot image
-volatility(rolling)
+# Display chart
+st.altair_chart(vol_chart, use_container_width=True)
 
 # -----------------------------------------------------------------------------------------------------------
 st.header("Seasonal Decomposition")
-st.write("Comming soon")
-#st.image()
+
+# Show image
+st.image("seasonal_decomposition.png")
 
 # -----------------------------------------------------------------------------------------------------------
 st.header("Scatter plot")
 
-# Choose X and Y
-X = st.selectbox("X axis", ['Adj Close', 'Close', 'High', 'Low', 'Open', 'Volume'])
-Y = st.selectbox("Y axis", ['Volume', 'Close', 'High', 'Low', 'Open', 'Adj Close'])
+# User selection for X and Y axis
+X = st.selectbox("X axis", ['Close', 'Adj Close', 'Open', 'High', 'Low', 'Volume'])
+Y = st.selectbox("Y axis", ['Volume', 'High', 'Low', 'Open', 'Close', 'Adj Close'])
 
-def scatter_plot(X, Y):
-    scatter_chart = alt.Chart(google).mark_circle(size=60).encode(
-        x=f'{X}:Q',
-        y=f'{Y}:Q',
-        color=f'{X}:Q',
-        tooltip=['Date', X, Y]
-    ).properties(title=f"{X} vs {Y}", width=750, height=400).interactive()
-    
-    st.altair_chart(scatter_chart)
+# Create Altair chart
+scatter_chart = alt.Chart(google).mark_circle(size=60).encode(
+    x=f'{X}:Q',
+    y=f'{Y}:Q',
+    color=f'{X}:Q',
+    tooltip=['Date', X, Y]
+).properties(title=f"{X} vs {Y}", width=750, height=400).interactive()
 
-# Show scatter plot
-scatter_plot(X, Y)
+# Display chart
+st.altair_chart(scatter_chart)
